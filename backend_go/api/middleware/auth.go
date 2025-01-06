@@ -1,29 +1,34 @@
 package middleware
 
 import (
-    "net/http"
-    "github.com/VladislavSCV/internal/utils"
-    "github.com/gin-gonic/gin"
+	"github.com/VladislavSCV/internal/utils"
+	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
-    return func(c *gin.Context) {
-        token := c.GetHeader("Authorization")
-        if token == "" {
-            c.JSON(http.StatusUnauthorized, gin.H{"error": "No token provided"})
-            c.Abort()
-            return
-        }
+	return func(c *gin.Context) {
+		// Получаем токен из заголовка Authorization
+		token := c.GetHeader("Authorization")
+		if token == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "No token provided"})
+			c.Abort()
+			return
+		}
 
-        claims, err := utils.ValidateToken(token)
-        if err != nil {
-            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-            c.Abort()
-            return
-        }
+		// Валидируем токен
+		claims, err := utils.ValidateToken(token)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
 
-        c.Set("userID", claims.UserID)
-        c.Set("roleID", claims.RoleID)
-        c.Next()
-    }
+		// Сохраняем userID и roleID в контексте
+		c.Set("userID", claims.UserID)
+		c.Set("roleID", claims.RoleID)
+
+		// Передаем управление следующему обработчику
+		c.Next()
+	}
 }
