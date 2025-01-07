@@ -6,18 +6,37 @@ import (
 	"github.com/VladislavSCV/internal/models"
 )
 
-func GetGradesByStudentID(db *sql.DB, studentID int) ([]models.Grade, error) {
-	var grades []models.Grade
+func GetGradesByStudentID(db *sql.DB, studentID int) ([]models.GradeDetail, error) {
+	var grades []models.GradeDetail
 
-	rows, err := db.Query("SELECT id, student_id, subject_id, value, date, created_at, updated_at FROM grades WHERE student_id = $1", studentID)
+	rows, err := db.Query(`
+        SELECT g.id, 
+               g.student_id, 
+               s.name AS subject_name, 
+               g.value, 
+               g.date, 
+               g.created_at, 
+               g.updated_at
+        FROM grades g
+        JOIN subjects s ON g.subject_id = s.id
+        WHERE g.student_id = $1
+    `, studentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch grades: %v", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var grade models.Grade
-		if err := rows.Scan(&grade.ID, &grade.StudentID, &grade.SubjectID, &grade.Value, &grade.Date, &grade.CreatedAt, &grade.UpdatedAt); err != nil {
+		var grade models.GradeDetail
+		if err := rows.Scan(
+			&grade.ID,
+			&grade.StudentID,
+			&grade.SubjectName,
+			&grade.Value,
+			&grade.Date,
+			&grade.CreatedAt,
+			&grade.UpdatedAt,
+		); err != nil {
 			return nil, fmt.Errorf("failed to scan grade: %v", err)
 		}
 		grades = append(grades, grade)
@@ -30,13 +49,21 @@ func GetGradesByStudentID(db *sql.DB, studentID int) ([]models.Grade, error) {
 	return grades, nil
 }
 
-func GetGradesByGroupID(db *sql.DB, groupID int) ([]models.Grade, error) {
-	var grades []models.Grade
+func GetGradesByGroupID(db *sql.DB, groupID int) ([]models.GradeDetail, error) {
+	var grades []models.GradeDetail
 
 	rows, err := db.Query(`
-        SELECT g.id, g.student_id, g.subject_id, g.value, g.date, g.created_at, g.updated_at
+        SELECT g.id, 
+               g.student_id, 
+               u.first_name || ' ' || u.last_name AS student_name, 
+               s.name AS subject_name, 
+               g.value, 
+               g.date, 
+               g.created_at, 
+               g.updated_at
         FROM grades g
         JOIN users u ON g.student_id = u.id
+        JOIN subjects s ON g.subject_id = s.id
         WHERE u.group_id = $1
     `, groupID)
 	if err != nil {
@@ -45,8 +72,17 @@ func GetGradesByGroupID(db *sql.DB, groupID int) ([]models.Grade, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var grade models.Grade
-		if err := rows.Scan(&grade.ID, &grade.StudentID, &grade.SubjectID, &grade.Value, &grade.Date, &grade.CreatedAt, &grade.UpdatedAt); err != nil {
+		var grade models.GradeDetail
+		if err := rows.Scan(
+			&grade.ID,
+			&grade.StudentID,
+			&grade.StudentName,
+			&grade.SubjectName,
+			&grade.Value,
+			&grade.Date,
+			&grade.CreatedAt,
+			&grade.UpdatedAt,
+		); err != nil {
 			return nil, fmt.Errorf("failed to scan grade: %v", err)
 		}
 		grades = append(grades, grade)

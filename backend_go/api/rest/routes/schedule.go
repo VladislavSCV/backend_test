@@ -1,18 +1,19 @@
 package routes
 
 import (
-    "github.com/VladislavSCV/api/rest/handlers"
-    "github.com/VladislavSCV/api/middleware"
-    "github.com/gin-gonic/gin"
+	"database/sql"
+	"github.com/VladislavSCV/api/middleware"
+	"github.com/VladislavSCV/api/rest/handlers"
+	"github.com/gin-gonic/gin"
 )
 
-func SetupScheduleRoutes(router *gin.Engine) {
-    scheduleGroup := router.Group("/api/schedule")
-    {
-        scheduleGroup.GET("/", handlers.GetSchedules)
-        scheduleGroup.GET("/:id", handlers.GetScheduleByID)
-        scheduleGroup.POST("/", middleware.AuthMiddleware(), handlers.CreateSchedule)
-        scheduleGroup.PUT("/:id", middleware.AuthMiddleware(), handlers.UpdateSchedule)
-        scheduleGroup.DELETE("/:id", middleware.AuthMiddleware(), handlers.DeleteSchedule)
-    }
+func SetupScheduleRoutes(router *gin.Engine, db *sql.DB) {
+	scheduleGroup := router.Group("/api/schedule")
+	{
+		scheduleGroup.GET("/", handlers.GetSchedules(db))
+		scheduleGroup.GET("/:id", handlers.GetScheduleByID(db))
+		scheduleGroup.POST("/", middleware.AuthMiddleware(db), handlers.CreateSchedule(db))
+		scheduleGroup.PUT("/:id", middleware.AuthMiddleware(db), handlers.UpdateSchedule(db))
+		scheduleGroup.DELETE("/:id", middleware.AuthMiddleware(db), handlers.DeleteSchedule(db))
+	}
 }

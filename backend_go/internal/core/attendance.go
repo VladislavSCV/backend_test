@@ -6,18 +6,37 @@ import (
 	"github.com/VladislavSCV/internal/models"
 )
 
-func GetAttendanceByStudentID(db *sql.DB, studentID int) ([]models.Attendance, error) {
-	var attendances []models.Attendance
+func GetAttendanceByStudentID(db *sql.DB, studentID int) ([]models.AttendanceDetail, error) {
+	var attendances []models.AttendanceDetail
 
-	rows, err := db.Query("SELECT id, student_id, subject_id, date, status, created_at, updated_at FROM attendance WHERE student_id = $1", studentID)
+	rows, err := db.Query(`
+        SELECT a.id, 
+               a.student_id, 
+               s.name AS subject_name, 
+               a.date, 
+               a.status, 
+               a.created_at, 
+               a.updated_at
+        FROM attendance a
+        JOIN subjects s ON a.subject_id = s.id
+        WHERE a.student_id = $1
+    `, studentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch attendance: %v", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var attendance models.Attendance
-		if err := rows.Scan(&attendance.ID, &attendance.StudentID, &attendance.SubjectID, &attendance.Date, &attendance.Status, &attendance.CreatedAt, &attendance.UpdatedAt); err != nil {
+		var attendance models.AttendanceDetail
+		if err := rows.Scan(
+			&attendance.ID,
+			&attendance.StudentID,
+			&attendance.SubjectName,
+			&attendance.Date,
+			&attendance.Status,
+			&attendance.CreatedAt,
+			&attendance.UpdatedAt,
+		); err != nil {
 			return nil, fmt.Errorf("failed to scan attendance: %v", err)
 		}
 		attendances = append(attendances, attendance)
@@ -30,13 +49,21 @@ func GetAttendanceByStudentID(db *sql.DB, studentID int) ([]models.Attendance, e
 	return attendances, nil
 }
 
-func GetAttendanceByGroupID(db *sql.DB, groupID int) ([]models.Attendance, error) {
-	var attendances []models.Attendance
+func GetAttendanceByGroupID(db *sql.DB, groupID int) ([]models.AttendanceDetail, error) {
+	var attendances []models.AttendanceDetail
 
 	rows, err := db.Query(`
-        SELECT a.id, a.student_id, a.subject_id, a.date, a.status, a.created_at, a.updated_at
+        SELECT a.id, 
+               a.student_id, 
+               u.first_name || ' ' || u.last_name AS student_name, 
+               s.name AS subject_name, 
+               a.date, 
+               a.status, 
+               a.created_at, 
+               a.updated_at
         FROM attendance a
         JOIN users u ON a.student_id = u.id
+        JOIN subjects s ON a.subject_id = s.id
         WHERE u.group_id = $1
     `, groupID)
 	if err != nil {
@@ -45,8 +72,17 @@ func GetAttendanceByGroupID(db *sql.DB, groupID int) ([]models.Attendance, error
 	defer rows.Close()
 
 	for rows.Next() {
-		var attendance models.Attendance
-		if err := rows.Scan(&attendance.ID, &attendance.StudentID, &attendance.SubjectID, &attendance.Date, &attendance.Status, &attendance.CreatedAt, &attendance.UpdatedAt); err != nil {
+		var attendance models.AttendanceDetail
+		if err := rows.Scan(
+			&attendance.ID,
+			&attendance.StudentID,
+			&attendance.StudentName,
+			&attendance.SubjectName,
+			&attendance.Date,
+			&attendance.Status,
+			&attendance.CreatedAt,
+			&attendance.UpdatedAt,
+		); err != nil {
 			return nil, fmt.Errorf("failed to scan attendance: %v", err)
 		}
 		attendances = append(attendances, attendance)

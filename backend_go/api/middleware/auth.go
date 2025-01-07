@@ -1,12 +1,13 @@
 package middleware
 
 import (
+	"database/sql"
 	"github.com/VladislavSCV/internal/utils"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Получаем токен из заголовка Authorization
 		token := c.GetHeader("Authorization")
