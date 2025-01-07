@@ -7,6 +7,7 @@ import (
 	"github.com/VladislavSCV/internal/utils"
 	"github.com/VladislavSCV/pkg"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"time"
 )
@@ -27,22 +28,33 @@ func Login(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user models.User
 		if err := c.ShouldBindJSON(&user); err != nil {
+			log.Printf("Ошибка привязки JSON: %v", err)
 			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
+
+		// Валидация входных данных
+		if user.Login == "" || user.Password == "" {
+			log.Printf("Некорректные данные для входа: пустой логин или пароль")
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "login and password are required"})
 			return
 		}
 
 		dbUser, err := core.AuthenticateUser(db, user.Login, user.Password)
 		if err != nil {
+			log.Printf("Ошибка аутентификации пользователя: %v", err)
 			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Invalid credentials"})
 			return
 		}
 
 		token, err := utils.GenerateToken(dbUser.ID, dbUser.RoleID)
 		if err != nil {
+			log.Printf("Ошибка генерации токена: %v", err)
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Could not generate token"})
 			return
 		}
 
+		log.Printf("Успешный вход пользователя: %s", user.Login)
 		c.JSON(http.StatusOK, LoginResponse{Token: token})
 	}
 }
@@ -62,12 +74,21 @@ func Registration(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user models.User
 		if err := c.ShouldBindJSON(&user); err != nil {
+			log.Printf("Ошибка привязки JSON: %v", err)
 			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
+
+		// Валидация входных данных
+		if user.Login == "" || user.Password == "" || user.FirstName == "" || user.LastName == "" || user.RoleID <= 0 {
+			log.Printf("Некорректные данные для регистрации: %+v", user)
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "login, password, first_name, last_name, and role_id are required"})
 			return
 		}
 
 		hashResult, err := pkg.CreateHashWithSalt(user.Password)
 		if err != nil {
+			log.Printf("Ошибка хеширования пароля: %v", err)
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Could not hash password"})
 			return
 		}
@@ -79,10 +100,12 @@ func Registration(db *sql.DB) gin.HandlerFunc {
 
 		userID, err := core.RegisterUser(db, user)
 		if err != nil {
+			log.Printf("Ошибка регистрации пользователя: %v", err)
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 			return
 		}
 
+		log.Printf("Успешная регистрация пользователя: %s (ID: %d)", user.Login, userID)
 		c.JSON(http.StatusOK, SuccessResponse{
 			Message: "User registered successfully",
 			Data:    gin.H{"user_id": userID},
@@ -104,16 +127,19 @@ func Verify(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
 		if token == "" {
+			log.Printf("Токен не предоставлен")
 			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "No token provided"})
 			return
 		}
 
 		claims, err := utils.ValidateToken(token)
 		if err != nil {
+			log.Printf("Ошибка валидации токена: %v", err)
 			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Invalid token"})
 			return
 		}
 
+		log.Printf("Успешная проверка токена для пользователя: %d", claims.UserID)
 		c.JSON(http.StatusOK, VerifyResponse{
 			UserID: claims.UserID,
 			RoleID: claims.RoleID,
@@ -136,22 +162,26 @@ func GetCurrentUser(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, exists := c.Get("userID")
 		if !exists {
+			log.Printf("userID не найден в контексте")
 			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "userID not found in context"})
 			return
 		}
 
 		userIDInt, ok := userID.(int)
 		if !ok {
+			log.Printf("Некорректный тип userID: %v", userID)
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "invalid userID type"})
 			return
 		}
 
 		user, err := core.GetCurrentUser(db, userIDInt)
 		if err != nil {
+			log.Printf("Ошибка получения информации о пользователе: %v", err)
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 			return
 		}
 
+		log.Printf("Успешно получена информация о пользователе: %d", userIDInt)
 		c.JSON(http.StatusOK, UserResponse{
 			ID:         user.ID,
 			FirstName:  user.FirstName,

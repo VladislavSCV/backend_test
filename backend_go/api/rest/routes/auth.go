@@ -11,6 +11,8 @@ func SetupAuthRoutes(router *gin.Engine, db *sql.DB) {
 	// Аутентификация
 	auth := router.Group("/api/auth")
 	{
+		// Применение rate limiting к маршрутам
+		auth.Use(middleware.RateLimiterMiddleware())
 		auth.POST("/login", handlers.Login(db))
 		auth.POST("/registration", handlers.Registration(db))
 		auth.POST("/verify", handlers.Verify(db))

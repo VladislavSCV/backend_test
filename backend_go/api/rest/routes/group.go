@@ -10,10 +10,16 @@ import (
 func SetupGroupRoutes(router *gin.Engine, db *sql.DB) {
 	groupGroup := router.Group("/api/group")
 	{
+		// Применение rate limiting к маршрутам
+		groupGroup.Use(middleware.RateLimiterMiddleware())
 		groupGroup.GET("/", handlers.GetGroups(db))
 		groupGroup.GET("/:id", handlers.GetGroupByID(db)) // получение информации о группе (студенты)
-		groupGroup.POST("/", middleware.AuthMiddleware(db), handlers.CreateGroup(db))
-		groupGroup.PUT("/:id", middleware.AuthMiddleware(db), handlers.UpdateGroup(db))
-		groupGroup.DELETE("/:id", middleware.AuthMiddleware(db), handlers.DeleteGroup(db))
+
+		// Ограничение доступа для создания группы только для администраторов
+		groupGroup.POST("/", middleware.AuthMiddleware(db), middleware.RoleMiddleware([]string{"admin"}), handlers.CreateGroup(db))
+
+		// Ограничение доступа для обновления и удаления группы только для администраторов
+		groupGroup.PUT("/:id", middleware.AuthMiddleware(db), middleware.RoleMiddleware([]string{"admin"}), handlers.UpdateGroup(db))
+		groupGroup.DELETE("/:id", middleware.AuthMiddleware(db), middleware.RoleMiddleware([]string{"admin"}), handlers.DeleteGroup(db))
 	}
 }

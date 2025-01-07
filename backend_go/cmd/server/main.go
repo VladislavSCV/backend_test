@@ -31,6 +31,10 @@ func main() {
 	// Инициализация Gin
 	r := gin.Default()
 
+	// Применение rate limiting ко всем API endpoints
+	//apiGroup := r.Group("/api")
+	//apiGroup.Use(middleware.RateLimiterMiddleware())
+
 	// Передача db в маршруты
 	routes.SetupAuthRoutes(r, db)
 	routes.SetupUserRoutes(r, db)
@@ -38,6 +42,10 @@ func main() {
 	routes.SetupScheduleRoutes(r, db)
 	routes.SetupGradeRoutes(r, db)
 	routes.SetupAttendanceRoutes(r, db)
+
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "pong"})
+	})
 
 	// Маршрут для Swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

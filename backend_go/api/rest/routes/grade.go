@@ -10,10 +10,14 @@ import (
 func SetupGradeRoutes(router *gin.Engine, db *sql.DB) {
 	gradeGroup := router.Group("/api/grades")
 	{
+		// Применение rate limiting к маршрутам
+		gradeGroup.Use(middleware.RateLimiterMiddleware())
 		gradeGroup.GET("/student/:id", handlers.GetGradesByStudentID(db))
 		gradeGroup.GET("/group/:id", handlers.GetGradesByGroupID(db))
-		gradeGroup.POST("/", middleware.AuthMiddleware(db), handlers.CreateGrade(db))
-		gradeGroup.PUT("/:id", middleware.AuthMiddleware(db), handlers.UpdateGrade(db))
-		gradeGroup.DELETE("/:id", middleware.AuthMiddleware(db), handlers.DeleteGrade(db))
+
+		// Ограничение доступа для создания, обновления и удаления оценок только для преподавателей
+		gradeGroup.POST("/", middleware.AuthMiddleware(db), middleware.RoleMiddleware([]string{"teacher"}), handlers.CreateGrade(db))
+		gradeGroup.PUT("/:id", middleware.AuthMiddleware(db), middleware.RoleMiddleware([]string{"teacher"}), handlers.UpdateGrade(db))
+		gradeGroup.DELETE("/:id", middleware.AuthMiddleware(db), middleware.RoleMiddleware([]string{"teacher"}), handlers.DeleteGrade(db))
 	}
 }
