@@ -480,7 +480,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Grade"
+                                "$ref": "#/definitions/models.GradeDetail"
                             }
                         }
                     },
@@ -534,7 +534,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Grade"
+                                "$ref": "#/definitions/models.GradeDetail"
                             }
                         }
                     },
@@ -1469,6 +1469,35 @@ const docTemplate = `{
                 },
                 "value": {
                     "description": "Оценка (2-5)",
+                    "type": "integer"
+                }
+            }
+        },
+        "models.GradeDetail": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "student_id": {
+                    "type": "integer"
+                },
+                "student_name": {
+                    "type": "string"
+                },
+                "subject_name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "value": {
                     "type": "integer"
                 }
             }
